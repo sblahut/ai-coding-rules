@@ -1,0 +1,57 @@
+---
+# Lefthook configuration for git hooks
+# Installation: npm install -g @evilmartians/lefthook
+# Or: brew install lefthook (macOS)
+# Then run: lefthook install
+
+fail_exit_code: 1
+
+# Pre-commit hooks - run before commit
+pre-commit:
+  # Skip hooks in CI environments
+  skip:
+    - CI
+    - SKIP_LEFTHOOK
+
+  parallel: false
+  commands:
+    # Markdown linting - MD040 and MD060 enforcement
+    markdown-lint:
+      glob: "*.md"
+      run: |
+        if ! command -v markdownlint &> /dev/null; then
+          echo "ℹ  markdownlint not installed. Skipping detailed checks."
+          echo "   Install with: npm install -g markdownlint-cli"
+          exit 0
+        fi
+        markdownlint -c .markdownlint.json {staged_files}
+      stage_fixed: true
+
+    # TypeScript/JavaScript linting - if package.json has lint script
+    code-lint:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: |
+        if [[ ! -f "package.json" ]]; then
+          exit 0
+        fi
+        if ! grep -q '"lint"' package.json; then
+          exit 0
+        fi
+        npm run lint -- {staged_files}
+      skip_output: summary
+
+# Commit message hooks - validate message format
+commit-msg:
+  commands:
+    # Optional: Add commit message validation
+    commit-format:
+      run: echo "Commit message hook can be extended here"
+      skip: true  # Disabled by default
+
+# Post-commit hooks - run after successful commit
+post-commit:
+  commands:
+    # Optional: Post-commit actions
+    post-commit-action:
+      run: echo "Post-commit hook can be extended here"
+      skip: true  # Disabled by default

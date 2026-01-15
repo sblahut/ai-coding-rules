@@ -1,79 +1,399 @@
-# Git Hooks Setup & Configuration
+# Git Hooks with Lefthook
 
-Enforce project standards automatically with git pre-commit hooks.
+Enforce project standards automatically using Lefthook for git hook management.
 
 ---
 
 ## Overview
 
-This template includes git hooks that automatically enforce:
+This template uses **Lefthook** - a fast, cross-platform git hook manager
+for better git hook management.
+
+**Why Lefthook?**
+
+- ⚡ Fast execution (compiled, not bash)
+- 🔄 Cross-platform (Windows, macOS, Linux)
+- 📦 Simple YAML configuration
+- 🎯 Parallel hook execution
+- 🔧 Easy to extend and customize
+
+Automatically enforces:
 
 - **Markdown Linting** (MD040, MD060) - Language tags, table formatting
 - **Code Linting** - TypeScript/JavaScript standards (if configured)
 - **Commit Message Standards** - (optional, extensible)
 
-The hooks run before each commit, catching issues early without manual checks.
-
 ---
 
 ## Quick Start
 
-### 1. Create a New Project
+### 1. Install Lefthook
+
+Choose one installation method:
+
+```bash
+# Option 1: npm (global)
+npm install -g @evilmartians/lefthook
+
+# Option 2: Homebrew (macOS)
+brew install lefthook
+
+# Option 3: Download binary from GitHub
+# https://github.com/evilmartians/lefthook/releases
+```
+
+### 2. Create a New Project
 
 ```bash
 ./scripts/setup-project.sh --name my-project --tools claude --git
 cd my-project
 ```
 
-The `--git` flag initializes git, but hooks aren't set up yet.
-
-### 2. Setup Git Hooks
+### 3. Install Hooks
 
 ```bash
-./scripts/setup-git-hooks.sh
+# Initialize lefthook for the project
+lefthook install
 ```
 
 This creates:
 
-- `.git/hooks/pre-commit` - Runs linting checks
-- `.git/hooks/prepare-commit-msg` - (Optional) Message preparation
-- `.markdownlint.json` - Linting configuration
+- `.git/hooks/pre-commit` - Runs markdown and code linting
+- `.git/hooks/commit-msg` - (Optional) Message validation
+- `.lefthook.yml` - Hook configuration
+- `.lefthookrc.json` - Hook settings
 
-### 3. Test the Hooks
+### 4. Test the Hooks
 
 Create or modify a markdown file:
 
 ```bash
-echo "# Test
+# Create bad markdown (missing language tag)
+cat > test.md << 'EOF'
+# Test
 
 \`\`\`
-code without language tag
+code without language
 \`\`\`
-" > test.md
+EOF
 
 git add test.md
-git commit -m "Test markdown"
+git commit -m "test"
 ```
 
-**Result**: Commit will be rejected with MD040 error (missing language tag).
+**Result**: Commit blocked with linting error (if markdownlint installed)
 
-### 4. Fix and Retry
-
-Fix the markdown:
+Fix and retry:
 
 ```bash
-echo "# Test
+cat > test.md << 'EOF'
+# Test
 
 \`\`\`javascript
 const x = 1;
 \`\`\`
-" > test.md
+EOF
 
 git add test.md
-git commit -m "Fix markdown"
+git commit -m "test"
 ```
 
-**Result**: Commit succeeds!
+**Result**: Commit succeeds ✅
+
+---
+
+## Configuration
+
+### `lefthook.yml` - Hook Commands
+
+The main configuration file that defines which hooks run and what they do:
+
+```yaml
+pre-commit:
+  commands:
+    markdown-lint:
+      glob: "*.md"
+      run: markdownlint -c .markdownlint.json {staged_files}
+
+    code-lint:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: npm run lint -- {staged_files}
+```
+
+**Key concepts:**
+
+- `glob` - Which files to check
+- `run` - Command to execute
+- `{staged_files}` - Placeholder for changed files
+- `skip_output` - Hide output (use `summary` or `meta`)
+- `stage_fixed` - Auto-stage fixes
+
+### `.lefthookrc.json` - Global Settings
+
+```json
+{
+  "skip_output": ["meta"],
+  "auto_install": true,
+  "source_dir": "."
+}
+```
+
+**Settings:**
+
+- `skip_output` - Types of output to hide
+- `auto_install` - Auto-install on `git clone`
+- `source_dir` - Where hooks are defined
+
+### `.markdownlint.json` - Markdown Rules
+
+Generated automatically, configures markdown linting:
+
+```json
+{
+  "extends": "markdownlint/style/prettier",
+  "MD040": {
+    "allowed_languages": [
+      "bash", "javascript", "typescript", "python",
+      "json", "yaml", "sql", "html", "css",
+      "dockerfile", "diff", "markdown"
+    ]
+  },
+  "MD013": false,
+  "MD033": false
+}
+```
+
+**Key rules:**
+
+- `MD040` - Fenced code block language tags
+- `MD060` - Table column spacing
+- `MD013` - Line length (disabled)
+- `MD033` - Inline HTML (disabled)
+
+---
+
+## Common Tasks
+
+### Skip Hooks (Emergency Only)
+
+```bash
+# Bypass all hooks
+git commit --no-verify
+
+# Or with environment variable
+SKIP_LEFTHOOK=1 git commit -m "Emergency fix"
+```
+
+### Run Hooks Manually
+
+```bash
+# Run all hooks
+lefthook run pre-commit
+
+# Run specific hook
+lefthook run markdown-lint
+```
+
+### Uninstall Hooks
+
+```bash
+lefthook uninstall
+```
+
+### Check Hook Status
+
+```bash
+# Show installed hooks
+lefthook dump
+
+# Show configuration
+lefthook dump --config
+```
+
+### Fix Markdown Automatically
+
+```bash
+# Fix all markdown files
+markdownlint --fix *.md
+markdownlint --fix **/*.md
+
+# Fix specific file
+markdownlint --fix docs/README.md
+```
+
+**What gets fixed:**
+
+- Missing language tags → adds `markdown` default
+- Table spacing → normalizes format
+- Line endings → standardizes
+- List indentation → fixes
+
+### Disable Specific Rule
+
+In markdown file:
+
+```markdown
+<!-- markdownlint-disable MD040 -->
+```
+
+code without language
+
+```
+<!-- markdownlint-enable MD040 -->
+```
+
+### Add Custom Hooks
+
+Edit `lefthook.yml`:
+
+```yaml
+pre-commit:
+  commands:
+    custom-check:
+      run: ./scripts/custom-validation.sh
+      stage_fixed: true
+```
+
+---
+
+## Installation & Requirements
+
+### Requirements
+
+- **Lefthook** - The hook manager (install via npm/brew)
+- **markdownlint-cli** - For markdown linting (optional but recommended)
+- **npm lint script** - For TypeScript/JavaScript (if you have package.json)
+
+### Installation Steps
+
+```bash
+# 1. Install lefthook globally
+npm install -g @evilmartians/lefthook
+
+# 2. Create project
+./scripts/setup-project.sh --name my-project --tools claude --git
+cd my-project
+
+# 3. Install hooks
+lefthook install
+
+# 4. (Recommended) Install markdownlint for detailed checking
+npm install -g markdownlint-cli
+
+# 5. Verify setup
+lefthook dump
+```
+
+### Without markdownlint
+
+The hooks still work without markdownlint, but will skip markdown linting:
+
+```bash
+lefthook install
+# Hooks installed but markdown linting unavailable
+# Run: npm install -g markdownlint-cli (to enable)
+```
+
+### CI/CD Integration
+
+Disable lefthook in CI to speed up builds:
+
+```bash
+# GitHub Actions
+- name: Run tests
+  env:
+    SKIP_LEFTHOOK: 1
+  run: npm test
+
+# GitLab CI
+test:
+  script:
+    - SKIP_LEFTHOOK=1 npm test
+
+# Jenkins
+environment {
+  SKIP_LEFTHOOK = '1'
+}
+```
+
+---
+
+## Troubleshooting
+
+### Hooks Not Running
+
+**Check if lefthook is installed:**
+
+```bash
+lefthook --version
+```
+
+**Check if hooks are installed:**
+
+```bash
+lefthook dump
+# Should show: pre-commit, commit-msg, etc.
+```
+
+**Reinstall hooks:**
+
+```bash
+lefthook install
+```
+
+### "Command not found: markdownlint"
+
+Install markdownlint:
+
+```bash
+npm install -g markdownlint-cli
+```
+
+Or disable markdown linting in `lefthook.yml`:
+
+```yaml
+markdown-lint:
+  skip: true
+```
+
+### "Pre-commit hook failed"
+
+Check the error message - it tells you what's wrong:
+
+```bash
+# Example: Fix markdown issues
+markdownlint --fix *.md
+
+# Example: Fix code issues
+npm run lint -- --fix
+
+# Retry commit
+git add .
+git commit -m "Fix linting issues"
+```
+
+### Hooks Run Too Slowly
+
+Optimize in `lefthook.yml`:
+
+```yaml
+pre-commit:
+  parallel: true  # Run commands in parallel
+  commands:
+    # ... commands ...
+```
+
+### Lefthook Not Found After Install
+
+On macOS, verify installation:
+
+```bash
+which lefthook
+# Should show: /usr/local/bin/lefthook
+
+# If not found, reinstall
+brew install lefthook
+```
 
 ---
 
@@ -81,13 +401,21 @@ git commit -m "Fix markdown"
 
 ### MD040 - Fenced Code Language
 
-**What it checks**:
+**Rule**: Every code block MUST have a language tag.
 
-- Every code block must have a language tag
-- `\`\`\`javascript` ✅ (good)
-- `\`\`\`` ❌ (fails)
+**Wrong:**
 
-**Common tags**:
+```text
+code without language
+```
+
+**Correct:**
+
+```javascript
+const x = 1;
+```
+
+**Common tags:**
 
 | Language | Tags |
 | -------- | ---- |
@@ -104,340 +432,28 @@ git commit -m "Fix markdown"
 
 ### MD060 - Table Formatting
 
-**What it checks**:
+**Rule**: Table separators need proper spacing.
 
-- Table separators need proper spacing
-- `| ------- | ------- |` ✅ (good)
-- `|--------|--------|` ❌ (fails)
-
-### Code Linting (Optional)
-
-If your project has a `package.json` with a `lint` script:
-
-- TypeScript/JavaScript files are checked
-- Must pass linting before commit
-
----
-
-## Installation & Requirements
-
-### Basic Setup (No markdownlint)
-
-The pre-commit hook works with basic regex checks, no dependencies needed.
-
-**Pros**:
-
-- No installation required
-- Works on any machine
-- Fast
-- Informational warnings for potential issues
-
-**Cons**:
-
-- Regex checks are limited
-- May not catch all issues
-- Informational only (won't block commits)
-
-**Recommendation**:
-Install markdownlint for production-quality enforcement. Basic checks work well
-for development.
-
-### With markdownlint (Recommended)
-
-For detailed markdown checking, install markdownlint:
-
-```bash
-# Option 1: Global installation
-npm install -g markdownlint-cli
-
-# Option 2: Project installation
-npm install --save-dev markdownlint-cli
-
-# Option 3: Homebrew (macOS)
-brew install markdownlint-cli
-```
-
-**After installation**:
-
-```bash
-# Verify it works
-markdownlint --version
-
-# Test on a file
-markdownlint test.md
-
-# Fix issues automatically
-markdownlint --fix test.md
-```
-
----
-
-## Configuration Files
-
-### `.markdownlint.json`
-
-Created automatically by `setup-git-hooks.sh`. Configures markdown linting rules:
-
-```json
-{
-  "extends": "markdownlint/style/prettier",
-  "MD040": {
-    "allowed_languages": [
-      "bash", "javascript", "typescript", "json", "yaml",
-      "markdown", "python", "sql", "html", "css", "dockerfile",
-      "diff", "go", "rust", "java", "c", "cpp", "csharp",
-      "ruby", "php", "swift", "kotlin"
-    ]
-  },
-  "MD013": false,
-  "MD033": false
-}
-```
-
-**Key settings**:
-
-- `MD040`: List of allowed language tags
-- `MD013`: Disabled (line length)
-- `MD033`: Disabled (inline HTML)
-
-### `.git/hooks/pre-commit`
-
-Bash script that runs before each commit. You can:
-
-- Edit directly to customize checks
-- Add new linting rules
-- Add project-specific validation
-
----
-
-## Common Tasks
-
-### Bypass Hooks (Emergency Only)
-
-```bash
-# Skip all hooks
-git commit --no-verify
-
-# Or use -n flag
-git commit -n -m "Emergency fix"
-```
-
-⚠️ Use sparingly - defeats the purpose of enforcement!
-
-### Fix Markdown Automatically
-
-```bash
-# Fix all markdown files
-markdownlint --fix *.md
-markdownlint --fix **/*.md
-
-# Fix specific file
-markdownlint --fix docs/README.md
-```
-
-**What gets fixed automatically**:
-
-- Missing language tags → adds `markdown` default
-- Table spacing → normalizes format
-- Line endings → standardizes
-- Indentation → fixes lists
-
-### Temporarily Disable Rule
-
-In markdown file, use comments:
+**Wrong:**
 
 ```markdown
-<!-- markdownlint-disable MD040 -->
+| Header |
+|--------|
 ```
 
-code without language tag
+**Correct:**
 
+```markdown
+| Header |
+| ------ |
 ```
-<!-- markdownlint-enable MD040 -->
-```
 
-### Add Custom Validation
+### TypeScript/JavaScript Linting
 
-Edit `.git/hooks/pre-commit` to add checks:
+If `package.json` has a `lint` script, TypeScript and JavaScript files are checked:
 
 ```bash
-# Example: Check for console.log in production code
-if git diff --cached | grep -q "console\.log"; then
-  print_error "Debug console.log detected"
-  exit 1
-fi
-```
-
----
-
-## Troubleshooting
-
-### Hooks Not Running
-
-**Check if hooks are executable**:
-
-```bash
-ls -la .git/hooks/
-# Should show: -rwxr-xr-x (with x permission)
-```
-
-**Make them executable**:
-
-```bash
-chmod +x .git/hooks/pre-commit
-chmod +x .git/hooks/prepare-commit-msg
-```
-
-### "markdownlint not found"
-
-Install markdownlint:
-
-```bash
-npm install -g markdownlint-cli
-```
-
-Or run hooks without it:
-
-```bash
-./scripts/setup-git-hooks.sh
-# Hooks will use fallback basic checks
-```
-
-### False Positive Errors
-
-**Check configuration**:
-
-```bash
-# View current config
-cat .markdownlint.json
-
-# Run with verbose output
-markdownlint -v file.md
-```
-
-**Update rules in `.markdownlint.json`** if needed.
-
-### Hook Blocks Valid Commit
-
-**Check the error message** - it should explain what's wrong.
-
-**Quick fixes**:
-
-```bash
-# For markdown issues
-markdownlint --fix *.md
-
-# For code issues
-npm run lint -- --fix
-
-# Then retry
-git add .
-git commit -m "Fix linting issues"
-```
-
----
-
-## Advanced Configuration
-
-### Customize Pre-Commit Hook
-
-Edit `.git/hooks/pre-commit` to add more checks:
-
-```bash
-# Check for large files
-for file in $STAGED_FILES; do
-  size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
-  if [[ $size -gt 5242880 ]]; then  # 5MB
-    print_error "$file is too large ($(($size/1024/1024))MB)"
-    exit 1
-  fi
-done
-
-# Check for secrets
-if grep -r "api_key\|password\|secret" $STAGED_FILES; then
-  print_error "Secrets detected in code"
-  exit 1
-fi
-```
-
-### Add More Hooks
-
-Create additional hooks in `.git/hooks/`:
-
-```bash
-# Commit message validation
-touch .git/hooks/commit-msg
-chmod +x .git/hooks/commit-msg
-
-# Post-commit actions
-touch .git/hooks/post-commit
-chmod +x .git/hooks/post-commit
-
-# Push validation
-touch .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
-```
-
-### Project-Specific Configuration
-
-Different teams may want different rules:
-
-```bash
-# For strict enforcement (production)
-./scripts/setup-git-hooks.sh
-
-# For relaxed rules (development)
-./scripts/setup-git-hooks.sh --skip-markdown
-```
-
----
-
-## CI/CD Integration
-
-### GitHub Actions
-
-Check markdown in CI pipeline:
-
-```yaml
-name: Markdown Lint
-
-on: [push, pull_request]
-
-jobs:
-  markdown-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: nosborn/github-action-markdown-cli@v3.3.0
-        with:
-          files: .
-          config_file: .markdownlint.json
-```
-
-### GitLab CI
-
-```yaml
-markdown-lint:
-  image: node:18
-  script:
-    - npm install -g markdownlint-cli
-    - markdownlint -c .markdownlint.json **/*.md
-  only:
-    - merge_requests
-```
-
-### Pre-Push Hook
-
-Add to `.git/hooks/pre-push`:
-
-```bash
-#!/bin/bash
-
-# Prevent pushing if hooks would fail
-if ! ./scripts/validate-all.sh; then
-  echo "Push blocked by validation hooks"
-  exit 1
-fi
+npm run lint
 ```
 
 ---
@@ -446,88 +462,124 @@ fi
 
 ### 1. Install Early
 
-Run setup immediately after creating a project:
+Set up lefthook immediately after creating a project:
 
 ```bash
 ./scripts/setup-project.sh --name project --tools claude --git
 cd project
-./scripts/setup-git-hooks.sh
+lefthook install
 ```
 
-### 2. Commit Hook Files
+### 2. Commit Configuration
 
-Add hook configuration to version control:
+Add hook config to version control:
 
 ```bash
-git add .markdownlint.json
-git commit -m "Add linting configuration"
+git add lefthook.yml .lefthookrc.json .markdownlint.json
+git commit -m "Add git hooks configuration"
 ```
 
-### 3. Document Exceptions
+### 3. Update Hooks
 
-If you disable rules, document why:
+When updating hook commands:
 
-```markdown
-<!-- markdownlint-disable MD033 -->
-<!-- Reason: Inline HTML needed for custom styling -->
-<div class="custom">Content</div>
-<!-- markdownlint-enable MD033 -->
+```bash
+# Edit lefthook.yml, then reinstall
+lefthook install
 ```
 
 ### 4. Team Consistency
 
-Ensure all team members have the same configuration:
+Ensure all team members use the same version:
 
 ```bash
-# In project README
-./scripts/setup-git-hooks.sh
+# Add to package.json
+"devDependencies": {
+  "@evilmartians/lefthook": "^1.7.0"
+}
+
+npm install
+lefthook install
 ```
 
-### 5. Regular Updates
+### 5. Document Exceptions
 
-Update linting rules as project evolves:
+When disabling rules, document why:
 
-```bash
-# After updating .markdownlint.json
-./scripts/setup-git-hooks.sh
+```markdown
+<!-- markdownlint-disable MD033 -->
+<!-- Reason: Custom HTML for styling needed -->
+<div class="custom-style">Content</div>
+<!-- markdownlint-enable MD033 -->
 ```
 
 ---
 
-## Workflow Example
+## Advanced Configuration
 
-**Scenario**: Developer modifies project documentation
+### Conditional Hooks
 
-```bash
-# 1. Make changes
-echo "# New Feature" > docs/feature.md
-echo "## Installation
-\`\`\`
-npm install
-\`\`\`" >> docs/feature.md
+Run hooks only when conditions are met:
 
-# 2. Stage changes
-git add docs/feature.md
-
-# 3. Attempt commit
-git commit -m "Add feature documentation"
-
-# 4. Hook runs automatically
-# Output: "✗ Code blocks without language tags detected (MD040)"
-# Commit blocked!
-
-# 5. Fix issues
-markdownlint --fix docs/feature.md
-# Auto-fixes to: \`\`\`bash
-
-# 6. Re-stage and commit
-git add docs/feature.md
-git commit -m "Add feature documentation"
-
-# 7. Success!
-# Output: "✓ Markdown linting passed"
-# Output: "[main 1234567] Add feature documentation"
+```yaml
+pre-commit:
+  commands:
+    typescript-lint:
+      glob: "*.{ts,tsx}"
+      run: npx tsc --noEmit
+      only: "*.{ts,tsx}"  # Only if TypeScript files changed
 ```
+
+### Stage Fixed Files
+
+Auto-stage files that hooks fix:
+
+```yaml
+pre-commit:
+  commands:
+    markdown-lint:
+      glob: "*.md"
+      run: markdownlint --fix {staged_files}
+      stage_fixed: true  # Auto-stage fixed files
+```
+
+### Skip Output
+
+Reduce noise in console:
+
+```yaml
+pre-commit:
+  commands:
+    lint:
+      run: npm run lint
+      skip_output: [execution_info]  # Hide execution info
+```
+
+### Environment Variables
+
+Pass environment data to hooks:
+
+```yaml
+pre-commit:
+  commands:
+    check:
+      run: echo $LEFTHOOK_HOOK_NAME
+      # Available: LEFTHOOK_HOOK_NAME, LEFTHOOK_RESULT, etc.
+```
+
+---
+
+## Comparison: Lefthook vs. Bash Scripts
+
+| Feature | Lefthook | Bash Scripts |
+| ------- | -------- | ------------ |
+| **Speed** | ⚡ Fast (compiled) | 🐌 Slower |
+| **Cross-platform** | ✅ Works everywhere | ❌ Unix-only |
+| **Configuration** | 📝 YAML (simple) | 🔧 Bash (complex) |
+| **Parallel execution** | ✅ Built-in | ❌ Manual |
+| **Maintenance** | ✅ Easy | ❌ Hard |
+| **Dependencies** | Single binary | Bash interpreter |
+| **Learning curve** | ✅ Low | ❌ High |
 
 ---
 
@@ -536,24 +588,22 @@ git commit -m "Add feature documentation"
 - [Markdown Linting Rule](./../.claude/rules/markdown-linting.md)
 - [Markdown Linter Skill](./../.claude/skills/markdown-linter/README.md)
 - [Project Setup Guide](./SETUP_GUIDE.md)
+- [Lefthook Official Docs](https://github.com/evilmartians/lefthook)
 
 ---
 
 ## Support
 
-For issues with git hooks:
+**Lefthook Documentation:**
 
-1. Check if hooks are executable: `ls -la .git/hooks/`
-2. Run setup script again: `./scripts/setup-git-hooks.sh`
-3. Check for syntax errors: `bash -n .git/hooks/pre-commit`
-4. Test hook directly: `./.git/hooks/pre-commit`
+- [GitHub: evilmartians/lefthook](https://github.com/evilmartians/lefthook)
+- [Official Wiki](https://github.com/evilmartians/lefthook/wiki)
 
-For markdownlint issues:
+**Markdownlint Documentation:**
 
-1. Check version: `markdownlint --version`
-2. Check config: `cat .markdownlint.json`
-3. Run verbose: `markdownlint -v file.md`
-4. Test file: `markdownlint file.md`
+- [markdownlint-cli](https://github.com/igorshubovych/markdownlint-cli)
+
+For issues with project setup, see [Troubleshooting](#troubleshooting) above.
 
 ---
 
