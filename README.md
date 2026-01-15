@@ -6,7 +6,7 @@ Unified configuration templates for **Claude Code**, **Cursor**, and **Antigravi
 
 ```bash
 # Clone and customize
-git clone https://github.com/your-org/ai-coding-templates.git my-project
+git clone https://github.com/jeremyspofford/ai-coding-templates.git my-project
 cd my-project && rm -rf .git && git init
 
 # Or use the setup script
