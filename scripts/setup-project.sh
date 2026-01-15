@@ -306,6 +306,27 @@ init_git_repo() {
     print_info "Initializing git repository..."
     cd "$project_path"
     git init
+
+    # Setup git-secrets if available
+    if command -v git-secrets &> /dev/null; then
+      print_info "Configuring git-secrets..."
+      git secrets --install --force
+      git secrets --register-aws
+
+      # Add custom patterns
+      git secrets --add 'private_key'
+      git secrets --add 'api[_-]?key'
+      git secrets --add 'api[_-]?secret'
+      git secrets --add 'access[_-]?token'
+      git secrets --add '[a-zA-Z0-9_-]*password[a-zA-Z0-9_-]*\s*[:=]'
+      git secrets --add -- '-----BEGIN (RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY'
+
+      print_success "git-secrets configured with AWS and custom patterns"
+    else
+      print_warning "git-secrets not found - install with: brew install git-secrets"
+      print_warning "Secrets scanning will be skipped until installed"
+    fi
+
     git add .
     git commit -m "Initial commit: AI coding templates setup" || true
     cd - > /dev/null
@@ -326,11 +347,19 @@ print_summary() {
 
   echo -e "${YELLOW}Next Steps:${NC}"
   echo "  1. cd $project_path"
-  echo "  2. lefthook install (set up git hooks)"
-  echo "  3. Edit .claude/instructions.md (Claude users)"
-  echo "  4. Customize .claude/config.json to add plugins"
-  echo "  5. Review and edit tool-specific rules"
-  echo "  6. git add . && git commit -m 'Customize AI settings'"
+  echo "  2. Install git-secrets: brew install git-secrets (if not installed)"
+  echo "  3. lefthook install (set up git hooks)"
+  echo "  4. Edit .claude/instructions.md (Claude users)"
+  echo "  5. Customize .claude/config.json to add plugins"
+  echo "  6. Review and edit tool-specific rules"
+  echo "  7. git add . && git commit -m 'Customize AI settings'"
+  echo ""
+
+  echo -e "${YELLOW}Security Setup (Secrets Protection):${NC}"
+  echo "  • Install git-secrets: brew install git-secrets"
+  echo "  • git-secrets auto-configured in new projects (if installed)"
+  echo "  • Blocks commits with AWS keys, API keys, passwords"
+  echo "  • See docs/GIT_HOOKS.md for secrets scanning details"
   echo ""
 
   echo -e "${YELLOW}Git Hooks (Lefthook):${NC}"

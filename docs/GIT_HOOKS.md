@@ -397,6 +397,174 @@ brew install lefthook
 
 ---
 
+## Secrets Scanning with git-secrets
+
+The repository automatically scans commits for secrets using [git-secrets](https://github.com/awslabs/git-secrets).
+
+### What Gets Scanned
+
+git-secrets detects:
+
+- **AWS credentials**: Access keys (AKIA...), secret keys, account IDs
+- **Private keys**: RSA, DSA, EC, OpenSSH, PGP private keys
+- **API keys**: Patterns like `api_key`, `api-key`, `apiKey` with values
+- **Tokens**: Access tokens, auth tokens
+- **Passwords**: Password assignments in code (`password = "..."`)
+- **Connection strings**: Database URLs with embedded credentials
+
+### Installation
+
+**Required**: git-secrets must be installed separately (not an npm package).
+
+```bash
+# macOS
+brew install git-secrets
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install git-secrets
+
+# Linux (manual build)
+git clone https://github.com/awslabs/git-secrets.git
+cd git-secrets
+sudo make install
+
+# Windows
+# Download from: https://github.com/awslabs/git-secrets/releases
+```
+
+**Auto-initialization**: When you make your first commit, Lefthook will automatically:
+
+1. Detect git-secrets installation
+2. Run `git secrets --install` to set up hooks
+3. Run `git secrets --register-aws` to add AWS patterns
+4. Add custom patterns for API keys, passwords, tokens
+
+### How It Works
+
+```bash
+# When you commit, git-secrets scans staged files
+git add config.js
+git commit -m "Add config"
+
+# If secrets detected:
+[ERROR] Matched one or more prohibited patterns
+Possible mitigations:
+- Mark false positives as allowed
+- Fix the secrets
+```
+
+**Performance**: Adds ~50-200ms to commit time (negligible).
+
+### Example: Blocked Commit
+
+```bash
+$ echo 'AKIAIOSFODNN7EXAMPLE' > test.txt
+$ git add test.txt
+$ git commit -m "Test"
+
+🔍 Scanning commit for secrets...
+test.txt:1:AKIAIOSFODNN7EXAMPLE
+
+[ERROR] Matched one or more prohibited patterns
+
+Possible mitigations:
+- Mark false positives as allowed using: git config --add secrets.allowed ...
+- Mark false positives as allowed by adding regular expressions to .gitallowed at repository's root directory
+- Fix the secrets
+```
+
+### Handling False Positives
+
+If git-secrets blocks a legitimate commit:
+
+```bash
+# Option 1: Allow specific string for this repository
+git secrets --add --allowed 'safe-example-string'
+
+# Option 2: Add to .gitallowed file
+echo 'safe-pattern-regex' >> .gitallowed
+
+# Option 3: Skip hook for emergency (USE RARELY)
+SKIP=secrets-scan git commit -m "Emergency fix"
+```
+
+### What if git-secrets is Not Installed?
+
+Lefthook will show a warning but allow the commit:
+
+```text
+⚠️  git-secrets not installed. Secrets scanning disabled.
+   Install: brew install git-secrets (macOS)
+   See: https://github.com/awslabs/git-secrets
+
+   ⚠️  WARNING: Proceeding without secrets scanning!
+```
+
+**Note**: `.gitignore` still prevents most secret files (`.env`, credentials, etc.) from being staged.
+
+### Adding Custom Patterns
+
+```bash
+# Add project-specific secret patterns
+git secrets --add 'myapp[_-]?secret'
+git secrets --add 'internal[_-]?token'
+
+# View all registered patterns
+git config --local --get-all secrets.patterns
+```
+
+### Testing Secret Protection
+
+```bash
+# Test 1: .gitignore blocks .env files
+echo "API_KEY=secret" > .env
+git add .env
+# Expected: "The following paths are ignored..."
+
+# Test 2: git-secrets blocks AWS keys
+echo "AKIAIOSFODNN7EXAMPLE" > test.txt
+git add test.txt
+git commit -m "Test"
+# Expected: "[ERROR] Matched one or more prohibited patterns"
+```
+
+### Troubleshooting git-secrets
+
+**Problem**: "git-secrets: command not found"
+
+```bash
+# Reinstall git-secrets
+brew reinstall git-secrets  # macOS
+```
+
+**Problem**: git-secrets not running on commits
+
+```bash
+# Reinstall Lefthook hooks
+lefthook install
+
+# Verify hook exists
+cat .git/hooks/pre-commit
+```
+
+**Problem**: Too many false positives
+
+```bash
+# Review patterns
+git config --local --get-all secrets.patterns
+
+# Remove problematic pattern (if needed)
+git config --local --unset-all secrets.patterns 'problematic-pattern'
+```
+
+### Resources
+
+- [git-secrets GitHub Repository](https://github.com/awslabs/git-secrets)
+- [Secrets Management Guide](./../.claude/rules/secrets-management.md)
+- [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
+
+---
+
 ## What Gets Checked
 
 ### MD040 - Fenced Code Language

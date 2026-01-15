@@ -1,0 +1,55 @@
+---
+description: Project-specific guidelines and instructions for Cursor AI assistant
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Project Guidelines for Cursor
+
+This file contains project-specific guidelines for Cursor AI assistant.
+
+## Project Overview
+
+- **Name:** [Your Project Name]
+- **Purpose:** [What this project does]
+- **Tech Stack:** [Languages, frameworks, tools]
+
+## Repository Structure
+
+[Describe your project structure]
+
+## Development Setup
+
+- **Dependencies:** [How to install]
+- **Environment:** [Local dev setup]
+- **Testing:** [How to run tests]
+
+## Coding Standards
+
+- Follow the rules in `.cursor/rules/`
+- Use TDD workflow from `.cursor/rules/tdd-workflow.mdc`
+- TypeScript: No `any`, prefer `interface`
+- Markdown: All code blocks must have language tags (MD040)
+
+## Available Commands
+
+Custom commands are available in `.cursor/commands/`:
+
+| Command | Description |
+| ------- | ----------- |
+| `commit-and-push.md` | Generate conventional commits and push |
+| `generate-mr-description.md` | Generate merge request descriptions |
+| `feature-flag.md` | Scaffold new features with safety flags |
+| `code-analyzer.md` | Comprehensive code quality analysis |
+| `markdown-linter.md` | Validate and fix markdown files |
+
+## Common Commands
+
+- Tests: `npm run test`
+- Build: `npm run build`
+- Lint: `npm run lint`
+- Markdown Lint: `npm run lint:md`
+
+## Getting Help
+
+Refer to `.cursor/rules/` for coding standards and `.cursor/commands/` for available operations.
