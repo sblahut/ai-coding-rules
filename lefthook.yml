@@ -42,7 +42,7 @@ pre-commit:
           git secrets --add 'api[_-]?secret'
           git secrets --add 'access[_-]?token'
           git secrets --add '[a-zA-Z0-9_-]*password[a-zA-Z0-9_-]*\s*[:=]'
-          git secrets --add -- '-----BEGIN (RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY'
+          git secrets --add -- '[-]{5}BEGIN (RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY'
 
           echo "✅ git-secrets patterns registered"
         fi

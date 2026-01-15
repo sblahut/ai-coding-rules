@@ -2,6 +2,13 @@
 
 Unified configuration templates for **Claude Code**, **Cursor**, and **Antigravity**.
 
+## Prerequisites
+
+To develop in this repository, you will need the following tools installed:
+
+- **[git-secrets](https://github.com/awslabs/git-secrets)**: Scans commits for secrets.
+- **[Lefthook](https://github.com/evilmartians/lefthook)**: Manages git hooks.
+
 ## Quick Start
 
 ```bash
