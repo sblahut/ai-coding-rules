@@ -1,40 +1,80 @@
-# Coding Practices
+# Claude Coding Standards Overview
 
 > **Trigger:** Always-on (applies to all TypeScript/JavaScript operations)
-> **Applies to:** `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx`
+> **Applies to:** `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx`, `**/*.py`, `**/*.java`, `**/*.cs`, `**/*.go`
 
-This document outlines general coding practices and standards to be followed across the codebase.
+This document provides an overview of coding practices. For comprehensive, Claude-specific standards, refer to the detailed guides below.
 
-## TypeScript Standards
+## Claude-Specific Standards
 
-### Strict Type Safety: No `any`
+**Location:** `.claude/rules/coding-standards.mdc`
+**Focus:** AI-assisted development with architectural analysis and self-critique protocols
+**Best For:** Claude-specific development with advanced AI capabilities
+
+## Core Principles (Claude Standards)
+
+### Strict Type Safety: Zero Tolerance for `any`
 
 **NEVER use the `any` type in TypeScript.**
 
-- The `any` type defeats the purpose of TypeScript's type system
-- If the type is truly unknown and you intended to use `any`, use `unknown` instead
-- `unknown` forces you to perform type checking before operating on the value, ensuring safety
+- Use `unknown` for uncertain inputs with proper type guards
+- Implement comprehensive validation (Zod, custom guards)
+- Leverage TypeScript's type system for safety
 
-**Incorrect:**
-
+**❌ Incorrect:**
 ```typescript
 function processData(data: any) {
   return data.value; // Unsafe access
 }
 ```
 
-**Correct:**
-
+**✅ Correct:**
 ```typescript
 function processData(data: unknown) {
-  if (typeof data === 'object' && data !== null && 'value' in data) {
-    return (data as { value: string }).value; // Safe access with checks
+  if (isValidData(data)) {
+    return data.value; // Safe access with validation
   }
   throw new Error("Invalid data format");
 }
+
+function isValidData(data: unknown): data is { value: string } {
+  return typeof data === 'object' &&
+         data !== null &&
+         'value' in data &&
+         typeof (data as any).value === 'string';
+}
 ```
 
-### Type Definitions
+### SOLID Principles Implementation
 
-- Prefer `interface` over `type` for object definitions to allow for better extensibility and error messages
-- Place shared types in `apps/shared/types/` if they are used by both frontend and backend
+All Claude standards enforce:
+- **SRP:** Single responsibility per function/class
+- **OCP:** Open for extension, closed for modification
+- **LSP:** Subtypes substitutable for base types
+- **ISP:** Client-specific interfaces
+- **DIP:** Depend on abstractions, not concretions
+
+### Development Workflow
+
+1. **Analysis:** Review existing architecture and patterns
+2. **Planning:** Design with SOLID principles and clean architecture
+3. **Implementation:** Write strictly typed, testable code
+4. **Validation:** Self-critique against standards before output
+5. **Refactoring:** Improve structure when needed
+
+## Available Claude Rules
+
+| Rule | Description |
+|------|-------------|
+| `coding-standards.mdc` | Comprehensive Claude-specific coding standards |
+| `tdd-workflow.md` | Test-Driven Development workflow guidelines |
+| `markdown-linting.md` | Markdown formatting and linting standards |
+| `secrets-management.md` | Security practices for handling secrets |
+
+## Additional Resources
+
+- **Cursor Standards:** `.cursor/rules/` for IDE-integrated development
+- **Agent Standards:** `.agent/rules/` for general AI agent standards
+- **Project Instructions:** `.cursor/rules/project-instructions.mdc`
+
+**Note:** Always refer to the comprehensive standards in `.claude/rules/coding-standards.mdc` for detailed Claude-specific implementation guidance.

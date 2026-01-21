@@ -1,40 +1,78 @@
-# Coding Practices
+# Agent Coding Standards Overview
 
 > **Trigger:** Always-on (applies to all TypeScript/JavaScript operations)
-> **Applies to:** `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx`
+> **Applies to:** `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx`, `**/*.py`, `**/*.java`, `**/*.cs`, `**/*.go`
 
-This document outlines general coding practices and standards to be followed across the codebase.
+This document provides an overview of coding practices. For comprehensive, AI agent standards, refer to the detailed guides below.
 
-## TypeScript Standards
+## Agent Standards
 
-### Strict Type Safety: No `any`
+**Location:** `.agent/rules/coding-standards.mdc`
+**Focus:** Enterprise-grade, maintainable, strictly typed code with SOLID principles
+**Best For:** General AI assistants requiring comprehensive architectural guidance
+
+## Core Principles (Agent Standards)
+
+### Strict Type Safety: Zero Tolerance for `any`
 
 **NEVER use the `any` type in TypeScript.**
 
-- The `any` type defeats the purpose of TypeScript's type system
-- If the type is truly unknown and you intended to use `any`, use `unknown` instead
-- `unknown` forces you to perform type checking before operating on the value, ensuring safety
+- Use `unknown` for uncertain inputs with proper type guards
+- Implement comprehensive validation (Zod, custom guards)
+- Leverage TypeScript's type system for safety
 
-**Incorrect:**
-
+**❌ Incorrect:**
 ```typescript
 function processData(data: any) {
   return data.value; // Unsafe access
 }
 ```
 
-**Correct:**
-
+**✅ Correct:**
 ```typescript
 function processData(data: unknown) {
-  if (typeof data === 'object' && data !== null && 'value' in data) {
-    return (data as { value: string }).value; // Safe access with checks
+  if (isValidData(data)) {
+    return data.value; // Safe access with validation
   }
   throw new Error("Invalid data format");
 }
+
+function isValidData(data: unknown): data is { value: string } {
+  return typeof data === 'object' &&
+         data !== null &&
+         'value' in data &&
+         typeof (data as any).value === 'string';
+}
 ```
 
-### Type Definitions
+### SOLID Principles Implementation
 
-- Prefer `interface` over `type` for object definitions to allow for better extensibility and error messages
-- Place shared types in `apps/shared/types/` if they are used by both frontend and backend
+All agent standards enforce:
+- **SRP:** Single responsibility per function/class
+- **OCP:** Open for extension, closed for modification
+- **LSP:** Subtypes substitutable for base types
+- **ISP:** Client-specific interfaces
+- **DIP:** Depend on abstractions, not concretions
+
+### Development Workflow
+
+1. **Analysis:** Review existing architecture and patterns
+2. **Planning:** Design with SOLID principles and clean architecture
+3. **Implementation:** Write strictly typed, testable code
+4. **Validation:** Self-critique against standards before output
+5. **Refactoring:** Improve structure when needed
+
+## Available Agent Rules
+
+| Rule | Description |
+|------|-------------|
+| `coding-standards.mdc` | Comprehensive agent coding standards |
+| `markdown-linting.md` | Markdown formatting and linting standards |
+
+## Additional Resources
+
+- **Claude Standards:** `.claude/rules/` for AI-assisted development
+- **Cursor Standards:** `.cursor/rules/` for IDE-integrated development
+- **Project Instructions:** `.cursor/rules/project-instructions.mdc`
+
+**Note:** Always refer to the comprehensive standards in `.agent/rules/coding-standards.mdc` for detailed AI agent implementation guidance.
